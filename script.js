@@ -32,7 +32,7 @@ function makeTextDetail(label, value, options = {}) {
   detail.append(summary);
 
   const content = document.createElement("div");
-  content.className = "detail-content";
+  content.className = "detail-content selectable-text";
   content.textContent = String(value).trim();
   if (options.language) content.lang = options.language;
   if (options.direction) content.dir = options.direction;
@@ -110,7 +110,84 @@ function renderLesson(lesson, index) {
     card.append(details);
   }
 
+  const speakControls = document.createElement("div");
+  speakControls.className = "speech-controls";
+  speakControls.setAttribute("role", "group");
+  speakControls.setAttribute("aria-label", `Text-to-speech controls for lesson ${index + 1}`);
+
+  const speakButton = document.createElement("button");
+  speakButton.type = "button";
+  speakButton.className = "option-button speak-button";
+  speakButton.textContent = "Read selected text aloud";
+  speakButton.addEventListener("click", () => speakSelectedText(speakButton));
+  speakControls.append(speakButton);
+
+  const stopButton = document.createElement("button");
+  stopButton.type = "button";
+  stopButton.className = "option-button stop-speech-button";
+  stopButton.textContent = "Stop speaking";
+  stopButton.addEventListener("click", stopSpeech);
+  speakControls.append(stopButton);
+  card.append(speakControls);
+
   return card;
+}
+
+function getSelectedLessonText() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return null;
+
+  const text = selection.toString().trim();
+  if (!text) return null;
+
+  const node = selection.anchorNode;
+  const element = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+  const selectedContent = element && element.closest(".selectable-text");
+  if (!selectedContent || !lessonList.contains(selectedContent)) return null;
+
+  return { text, language: selectedContent.lang || "en" };
+}
+
+function speakSelectedText(button) {
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    statusMessage.textContent = "Text-to-speech is not supported in this browser.";
+    return;
+  }
+
+  const selected = getSelectedLessonText();
+  if (!selected) {
+    statusMessage.textContent = "Select text inside a lesson script, question, or answer first.";
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(selected.text);
+  utterance.lang = selected.language === "ar" ? "ar-SA" : "en-US";
+
+  const voices = window.speechSynthesis.getVoices();
+  const voice = voices.find((candidate) => candidate.lang.toLowerCase().startsWith(selected.language));
+  if (voice) utterance.voice = voice;
+
+  utterance.onstart = () => { statusMessage.textContent = `Speaking selected ${selected.language === "ar" ? "Arabic" : "English"} text.`; };
+  utterance.onend = () => { statusMessage.textContent = "Speech finished."; };
+  utterance.onerror = (event) => {
+    statusMessage.textContent = event.error === "canceled" ? "Speech stopped." : "Could not speak the selected text. Try another browser or device voice.";
+  };
+  button.setAttribute("aria-label", "Reading selected text aloud");
+  window.speechSynthesis.speak(utterance);
+  selectionCleanup();
+}
+
+function selectionCleanup() {
+  const selection = window.getSelection();
+  if (selection) selection.removeAllRanges();
+}
+
+function stopSpeech() {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+    statusMessage.textContent = "Speech stopped.";
+  }
 }
 
 function setLanguage(language) {
