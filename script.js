@@ -1,0 +1,142 @@
+const lessonList = document.querySelector("#lesson-list");
+const statusMessage = document.querySelector("#status");
+
+const fields = [
+  { key: "lessonTitle", label: "Lesson title" },
+  { key: "unitNumber", label: "Unit number" },
+  { key: "bookTitle", label: "Book title" },
+  { key: "pageNumber", label: "Page number" },
+  { key: "audioFile", label: "Audio file" },
+  { key: "englishScript", label: "English script" },
+  { key: "arabicTranslation", label: "Arabic translation", language: "ar", direction: "rtl" },
+  { key: "question", label: "Question about the audio" },
+  { key: "answer", label: "Answer" }
+];
+
+function hasContent(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "";
+}
+
+function makeTextDetail(label, value, options = {}) {
+  if (!hasContent(value)) return null;
+
+  const detail = document.createElement("details");
+  detail.className = "lesson-detail";
+
+  const summary = document.createElement("summary");
+  summary.textContent = label;
+  detail.append(summary);
+
+  const content = document.createElement("div");
+  content.className = "detail-content";
+  content.textContent = String(value).trim();
+  if (options.language) content.lang = options.language;
+  if (options.direction) content.dir = options.direction;
+  detail.append(content);
+
+  return detail;
+}
+
+function makeAudioDetail(filename) {
+  if (!hasContent(filename)) return null;
+
+  const detail = document.createElement("details");
+  detail.className = "lesson-detail";
+  const summary = document.createElement("summary");
+  summary.textContent = "Audio file";
+  detail.append(summary);
+
+  const content = document.createElement("div");
+  content.className = "detail-content audio-content";
+  const name = document.createElement("p");
+  name.textContent = String(filename).trim();
+  content.append(name);
+
+  // Accept local paths or HTTP(S) URLs only; never use arbitrary executable schemes.
+  const source = String(filename).trim();
+  const isWebUrl = /^https?:\/\//i.test(source);
+  const isLocalPath = !/^[a-z][a-z\d+.-]*:/i.test(source) && !source.startsWith("//");
+  if (isWebUrl || isLocalPath) {
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "none";
+    audio.setAttribute("aria-label", "Lesson audio playback");
+    const audioSource = document.createElement("source");
+    audioSource.src = source;
+    audio.append(audioSource);
+    content.append(audio);
+  }
+
+  detail.append(content);
+  return detail;
+}
+
+function renderLesson(lesson, index) {
+  const card = document.createElement("article");
+  card.className = "lesson-card";
+  card.setAttribute("aria-labelledby", `lesson-heading-${index + 1}`);
+
+  const heading = document.createElement("h3");
+  heading.className = "lesson-number";
+  heading.id = `lesson-heading-${index + 1}`;
+  heading.textContent = `Lesson ${index + 1}`;
+  card.append(heading);
+
+  const details = document.createElement("div");
+  details.className = "details-list";
+
+  for (const field of fields) {
+    if (field.key === "audioFile") {
+      const audioDetail = makeAudioDetail(lesson[field.key]);
+      if (audioDetail) details.append(audioDetail);
+    } else {
+      const detail = makeTextDetail(field.label, lesson[field.key], field);
+      if (detail) details.append(detail);
+    }
+  }
+
+  if (!details.childElementCount) {
+    const empty = document.createElement("p");
+    empty.className = "empty-lesson";
+    empty.textContent = "This lesson plan is ready to be filled in.";
+    card.append(empty);
+  } else {
+    card.append(details);
+  }
+
+  return card;
+}
+
+async function loadLessons() {
+  try {
+    const response = await fetch("data.json", { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Could not load lesson plans (${response.status}).`);
+
+    const lessons = await response.json();
+    if (!Array.isArray(lessons)) throw new Error("Lesson data must be a JSON array.");
+
+    const validLessons = lessons.filter((lesson) => lesson && typeof lesson === "object" && !Array.isArray(lesson));
+    if (!validLessons.length) {
+      statusMessage.textContent = "No lesson plans yet. Add a lesson to data.json to get started.";
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    validLessons.forEach((lesson, index) => fragment.append(renderLesson(lesson, index)));
+    lessonList.replaceChildren(fragment);
+
+    const populatedCount = validLessons.filter((lesson) =>
+      fields.some((field) => hasContent(lesson[field.key]))
+    ).length;
+    statusMessage.textContent = populatedCount
+      ? `${validLessons.length} lesson plan${validLessons.length === 1 ? "" : "s"} available.`
+      : "Your lesson plan template is ready. Add information in data.json; blank sections stay hidden.";
+  } catch (error) {
+    statusMessage.textContent = "Lesson plans could not be loaded. Please check that data.json is valid JSON and try again.";
+    console.error(error);
+  } finally {
+    lessonList.setAttribute("aria-busy", "false");
+  }
+}
+
+loadLessons();
