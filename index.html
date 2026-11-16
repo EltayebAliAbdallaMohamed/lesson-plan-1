@@ -20,6 +20,20 @@
   </header>
 
   <main class="container" id="main-content">
+    <section class="preferences" aria-labelledby="preferences-heading">
+      <h2 id="preferences-heading">Display options</h2>
+      <div class="control-row" role="group" aria-label="Choose script language">
+        <span class="control-label">Script language</span>
+        <button type="button" class="option-button language-button" data-language="en" aria-pressed="true">English</button>
+        <button type="button" class="option-button language-button" data-language="ar" aria-pressed="false" lang="ar">العربية</button>
+      </div>
+      <div class="control-row" role="group" aria-label="Accessibility display settings">
+        <span class="control-label">Reading comfort</span>
+        <button type="button" id="text-size-toggle" class="option-button" aria-pressed="false">Larger text</button>
+        <button type="button" id="contrast-toggle" class="option-button" aria-pressed="false">High contrast</button>
+      </div>
+    </section>
+
     <section aria-labelledby="lessons-heading">
       <h2 id="lessons-heading">Your lessons</h2>
       <p id="status" class="status" role="status" aria-live="polite">Loading lesson plans…</p>
@@ -28,7 +42,7 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container"><p>Lesson information is provided in an easy-to-open format.</p></div>
+    <div class="container"><p>To add audio, put the audio file in your project and enter its relative path in the lesson's <code>audioFile</code> field in data.json.</p></div>
   </footer>
 </body>
 </html>

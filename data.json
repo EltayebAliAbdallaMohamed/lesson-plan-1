@@ -1,13 +1,13 @@
 [
   {
     "audioFile": "",
-    "englishScript": "",
-    "arabicTranslation": "",
-    "unitNumber": "",
-    "bookTitle": "",
-    "pageNumber": "",
-    "lessonTitle": "",
-    "question": "",
-    "answer": ""
+    "englishScript": "Maya: Good morning, Sami. Where are you going?\nSami: I am going to the library to borrow a book.\nMaya: What kind of book would you like?\nSami: I would like a book about space.\nMaya: That sounds interesting. Have a nice day!\nSami: Thank you. See you later!",
+    "arabicTranslation": "مايا: صباح الخير يا سامي. إلى أين أنت ذاهب؟\nسامي: أنا ذاهب إلى المكتبة لاستعارة كتاب.\nمايا: ما نوع الكتاب الذي تريده؟\nسامي: أريد كتاباً عن الفضاء.\nمايا: يبدو ذلك ممتعاً. أتمنى لك يوماً سعيداً!\nسامي: شكراً لك. أراك لاحقاً!",
+    "unitNumber": "1",
+    "bookTitle": "English for Everyday Life",
+    "pageNumber": "12",
+    "lessonTitle": "A visit to the library",
+    "question": "Where is Sami going, and what kind of book does he want?",
+    "answer": "He is going to the library, and he wants a book about space."
   }
 ]

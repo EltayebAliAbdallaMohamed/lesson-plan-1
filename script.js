@@ -1,5 +1,8 @@
 const lessonList = document.querySelector("#lesson-list");
 const statusMessage = document.querySelector("#status");
+const languageButtons = document.querySelectorAll(".language-button");
+const textSizeToggle = document.querySelector("#text-size-toggle");
+const contrastToggle = document.querySelector("#contrast-toggle");
 
 const fields = [
   { key: "lessonTitle", label: "Lesson title" },
@@ -7,7 +10,7 @@ const fields = [
   { key: "bookTitle", label: "Book title" },
   { key: "pageNumber", label: "Page number" },
   { key: "audioFile", label: "Audio file" },
-  { key: "englishScript", label: "English script" },
+  { key: "englishScript", label: "English script", language: "en" },
   { key: "arabicTranslation", label: "Arabic translation", language: "ar", direction: "rtl" },
   { key: "question", label: "Question about the audio" },
   { key: "answer", label: "Answer" }
@@ -22,6 +25,7 @@ function makeTextDetail(label, value, options = {}) {
 
   const detail = document.createElement("details");
   detail.className = "lesson-detail";
+  if (options.language) detail.dataset.language = options.language;
 
   const summary = document.createElement("summary");
   summary.textContent = label;
@@ -41,7 +45,7 @@ function makeAudioDetail(filename) {
   if (!hasContent(filename)) return null;
 
   const detail = document.createElement("details");
-  detail.className = "lesson-detail";
+  detail.className = "lesson-detail audio-detail";
   const summary = document.createElement("summary");
   summary.textContent = "Audio file";
   detail.append(summary);
@@ -79,7 +83,9 @@ function renderLesson(lesson, index) {
   const heading = document.createElement("h3");
   heading.className = "lesson-number";
   heading.id = `lesson-heading-${index + 1}`;
-  heading.textContent = `Lesson ${index + 1}`;
+  heading.textContent = hasContent(lesson.lessonTitle)
+    ? `Lesson ${index + 1}: ${String(lesson.lessonTitle).trim()}`
+    : `Lesson ${index + 1}`;
   card.append(heading);
 
   const details = document.createElement("div");
@@ -107,6 +113,43 @@ function renderLesson(lesson, index) {
   return card;
 }
 
+function setLanguage(language) {
+  document.querySelectorAll("[data-language]").forEach((detail) => {
+    detail.hidden = detail.dataset.language !== language;
+  });
+  languageButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.language === language));
+  });
+  try { localStorage.setItem("lesson-language", language); } catch { /* Storage may be disabled. */ }
+}
+
+function setPreference(key, enabled, className, button) {
+  document.body.classList.toggle(className, enabled);
+  button.setAttribute("aria-pressed", String(enabled));
+  try { localStorage.setItem(key, String(enabled)); } catch { /* Storage may be disabled. */ }
+}
+
+function readPreference(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value === "true";
+  } catch {
+    return fallback;
+  }
+}
+
+languageButtons.forEach((button) => {
+  button.addEventListener("click", () => setLanguage(button.dataset.language));
+});
+
+textSizeToggle.addEventListener("click", () => {
+  setPreference("lesson-large-text", !document.body.classList.contains("large-text"), "large-text", textSizeToggle);
+});
+
+contrastToggle.addEventListener("click", () => {
+  setPreference("lesson-high-contrast", !document.body.classList.contains("high-contrast"), "high-contrast", contrastToggle);
+});
+
 async function loadLessons() {
   try {
     const response = await fetch("data.json", { headers: { Accept: "application/json" } });
@@ -131,6 +174,13 @@ async function loadLessons() {
     statusMessage.textContent = populatedCount
       ? `${validLessons.length} lesson plan${validLessons.length === 1 ? "" : "s"} available.`
       : "Your lesson plan template is ready. Add information in data.json; blank sections stay hidden.";
+
+    let language = "en";
+    try {
+      const savedLanguage = localStorage.getItem("lesson-language");
+      if (savedLanguage === "en" || savedLanguage === "ar") language = savedLanguage;
+    } catch { /* Use English if storage is unavailable. */ }
+    setLanguage(language);
   } catch (error) {
     statusMessage.textContent = "Lesson plans could not be loaded. Please check that data.json is valid JSON and try again.";
     console.error(error);
@@ -139,4 +189,6 @@ async function loadLessons() {
   }
 }
 
+setPreference("lesson-large-text", readPreference("lesson-large-text", false), "large-text", textSizeToggle);
+setPreference("lesson-high-contrast", readPreference("lesson-high-contrast", false), "high-contrast", contrastToggle);
 loadLessons();
